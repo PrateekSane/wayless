@@ -8,7 +8,7 @@ After=network.target
 # run as the 'pi' user
 User=prateeksane
 # start your script
-ExecStart=/home/pi/start_ros.sh
+ExecStart=/home/prateeksane/wayless/ros_launch/launch_ros.sh
 # if roslaunch or roscore crashes, restart them
 Restart=on-failure
 # give roslaunch a chance to shut down cleanly
