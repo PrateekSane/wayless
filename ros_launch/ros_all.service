@@ -1,0 +1,18 @@
+# Needs to live in /etc/systemd/system/ros_all.service
+
+[Unit]
+Description=ROS master + Velodyne VLP-16 driver
+After=network.target
+
+[Service]
+# run as the 'pi' user
+User=prateeksane
+# start your script
+ExecStart=/home/pi/start_ros.sh
+# if roslaunch or roscore crashes, restart them
+Restart=on-failure
+# give roslaunch a chance to shut down cleanly
+TimeoutStopSec=20
+
+[Install]
+WantedBy=multi-user.target
