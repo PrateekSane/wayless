@@ -2,6 +2,16 @@
 
 This guide walks you through the complete steps to stream 3D pointclouds from a Velodyne VLP-16 LiDAR to a Raspberry Pi running **Ubuntu 20.04 LTS (Focal Fossa)** and **ROS Noetic**.
 
+### starting local docker image for using ros
+On mac using any ros package need this docker
+```
+docker run -it --rm -v "$PWD":/bags rosbag-combiner
+```
+
+### Building Local docker image
+```
+docker build -t rosbag-combiner .
+```
 ---
 
 ## 1. Hardware & Networking
