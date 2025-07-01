@@ -17,6 +17,6 @@ SESSION_DIR="${BASE_DIR}/${TIMESTAMP}"
 mkdir -p "${SESSION_DIR}"
 
 # 4) Start recording (splitting every 10 s) into that folder
-rosbag record /velodyne_points \
+rosbag record /velodyne_points /tf /tf_static /clock \
     --split --duration=10s \
     -O "${SESSION_DIR}/velo" 2>&1 | tee "${SESSION_DIR}/rosbag.log" 
