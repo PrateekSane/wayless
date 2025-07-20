@@ -32,7 +32,7 @@ TF_PID=$!
 echo "[*] static_transform_publisher running with pid $TF_PID."
 
 # 5) Build a timestamped session directory
-BASE_DIR="${HOME}/bags"
+BASE_DIR="${HOME}/wayless/bags"
 TIMESTAMP=$(date +'%m-%d-%H-%M')
 SESSION_DIR="${BASE_DIR}/${TIMESTAMP}"
 echo "[*] Creating session directory: ${SESSION_DIR}"
