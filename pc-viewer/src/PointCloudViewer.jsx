@@ -1,62 +1,114 @@
-import { OrbitControls } from "@react-three/drei";
-import { Canvas, useLoader } from "@react-three/fiber";
-import React, { Suspense, useMemo } from "react";
-import * as THREE from "three";
-import { PCDLoader } from "three/examples/jsm/loaders/PCDLoader";
-
-function ColoredPCDScene() {
-  // load the raw PCD points object
-  const points = useLoader(PCDLoader, "/models/mycloud.pcd");
-
-  // once loaded, create a new geometry with per‑vertex colors
-  const coloredGeom = useMemo(() => {
-    const geom = points.geometry.clone();
-    const pos = geom.attributes.position.array;
-    const N = pos.length / 3;
-
-    // compute max distance (for normalization)
-    geom.computeBoundingSphere();
-    const maxDist = geom.boundingSphere.radius || 1;
-
-    // build a color array
-    const colors = new Float32Array(N * 3);
-    for (let i = 0; i < N; i++) {
-      const x = pos[i * 3 + 0];
-      const y = pos[i * 3 + 1];
-      const z = pos[i * 3 + 2];
-      const d = Math.sqrt(x * x + y * y + z * z);
-      const t = THREE.MathUtils.clamp(d / maxDist, 0, 1);
-      // hue: 0.7→0.0 as distance goes 0→max (blue→red)
-      const c = new THREE.Color().setHSL((1 - t) * 0.7, 1.0, 0.5);
-      colors.set(c.toArray(), i * 3);
-    }
-    geom.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-    return geom;
-  }, [points]);
-
-  return (
-    <points geometry={coloredGeom}>
-      <pointsMaterial vertexColors size={0.05} sizeAttenuation />
-    </points>
-  );
-}
+import React, { useEffect, useRef, useState } from "react";
+// switch to the maintained Foxglove fork if you can:
+import Worldview, { Axes, Cubes, Points } from "@foxglove/regl-worldview";
+// (or) import from "@foxglove/regl-worldview" if you’ve installed that
+import { loadPointClouds } from "./bagLoader";
 
 export default function PointCloudViewer() {
+  const [scans, setScans] = useState([]);
+  const [frame, setFrame] = useState(0);
+  const playRef = useRef(null);
+
+  // Controlled camera state
+  const [cameraState, setCameraState] = useState({
+    // 15 m back on Y, 5 m up on Z
+    position: { x: 0, y: -15, z: 5 },
+    lookAt: { x: 0, y: 0, z: 0 },
+  });
+
+  // load bag → scans
+  useEffect(() => {
+    loadPointClouds("/velo_21.bag")
+      .then((loaded) => {
+        console.log(`✅ Loaded ${loaded.length} scans`);
+        if (loaded[0]?.length) {
+          console.log("   first point:", loaded);
+        }
+        setScans(loaded);
+      })
+      .catch(console.error);
+  }, []);
+
+  // spacebar play/pause
+  useEffect(() => {
+    function onKey(e) {
+      if (e.code === "Space") {
+        if (playRef.current) {
+          clearInterval(playRef.current);
+          playRef.current = null;
+        } else {
+          playRef.current = setInterval(
+            () => setFrame((f) => (f + 1) % scans.length),
+            200
+          );
+        }
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [scans]);
+
+  // Log camera state so you can tweak it
+  useEffect(() => {
+    console.log("CameraState:", cameraState);
+  }, [cameraState]);
+
   return (
-    // make the canvas fill the viewport
-    <div
-      style={{ width: "100vw", height: "100vh", margin: 0, overflow: "hidden" }}
+    <Worldview
+      style={{ width: "100vw", height: "100vh" }}
+      backgroundColor={{ r: 0, g: 0, b: 0, a: 1 }}
+      // switch to a controlled camera
+      cameraState={cameraState}
+      // allow the user to orbit by right‑drag, WASD, etc.
+      onCameraStateChange={setCameraState}
     >
-      <Canvas
-        style={{ width: "100%", height: "100%" }}
-        camera={{ position: [0, 0, 10], fov: 75 }}
-      >
-        <ambientLight intensity={0.5} />
-        <Suspense fallback={null}>
-          <ColoredPCDScene />
-        </Suspense>
-        <OrbitControls enablePan enableZoom enableRotate />
-      </Canvas>
-    </div>
+      {/* 1. Axes triad (X=red, Y=green, Z=blue) */}
+      <Axes length={5} />
+
+      {/* 2. Static test point at origin (red, size 5) */}
+      <Points
+        pointSize={5}
+        points={[
+          {
+            position: { x: 0, y: 0, z: 0 },
+            color: { r: 1, g: 0, b: 0, a: 1 },
+          },
+        ]}
+      />
+
+      {/* 3. Your dynamic LiDAR scan (green points) */}
+      {scans[frame] && (
+        <Points
+          pointSize={0.1}
+          points={scans[frame].map((p) => ({
+            position: p,
+            color: { r: 0, g: 1, b: 0, a: 1 },
+          }))}
+        />
+      )}
+
+      {/* 4. Ego‑car cube at origin (semi‑transparent blue) */}
+      <Cubes>
+        {[
+          {
+            pose: {
+              position: { x: 0, y: 0, z: 0 },
+              orientation: { x: 0, y: 0, z: 0, w: 1 },
+            },
+            scale: { x: 1.5, y: 1.5, z: 0.5 },
+            color: { r: 0, g: 0, b: 1, a: 0.2 },
+          },
+        ]}
+      </Cubes>
+      <Points
+        pointSize={5}
+        points={[
+          {
+            position: { x: 0, y: 0, z: 1 }, // lifted above cube
+            color: { r: 1, g: 0, b: 0, a: 1 },
+          },
+        ]}
+      />
+    </Worldview>
   );
 }
