@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { loadPointClouds } from "./bagLoader";
 
 export default function PointCloudViewer() {
-  const pointSize = 50;
+  const pointSize = 5;
 
   const [firstFrame, setFirstFrame] = useState([]);
 
@@ -12,8 +12,8 @@ export default function PointCloudViewer() {
     loadPointClouds("/velo_21.bag")
       .then((loaded) => {
         if (loaded.length > 0) {
-          setFirstFrame([loaded[0][0]]);
-          console.log("APPLES BANANAS ", [loaded[0][0]]);
+          setFirstFrame(loaded[0]);
+          console.log("APPLES BANANAS ", loaded[0]);
         }
       })
       .catch(console.error);
