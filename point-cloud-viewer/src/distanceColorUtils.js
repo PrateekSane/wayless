@@ -1,6 +1,10 @@
 import Worldview, { Cubes, Points } from "@foxglove/regl-worldview";
 import React, { useEffect, useRef, useState } from "react";
 import { loadPointClouds } from "./bagLoader";
+import {
+  createDistanceColorMarkers,
+  groupPointsByDistance,
+} from "./distanceColorUtils";
 
 export default function PointCloudViewer() {
   // camera methods
@@ -68,77 +72,14 @@ export default function PointCloudViewer() {
     };
   }, [allSweeps.length]);
 
-  // Points handling with distance-based coloring
+  // Points handling with discrete distance-based coloring
   const pointSize = 2;
 
-  // Simplified approach - use fewer bins and stable objects
   const markers = React.useMemo(() => {
     if (frame.length === 0) return [];
 
-    // Use fewer bins to reduce complexity
-    const numBins = 5;
-
-    // Calculate distances
-    const distances = frame.map((point) =>
-      Math.sqrt(point.x * point.x + point.y * point.y + point.z * point.z)
-    );
-
-    const minDistance = Math.min(...distances);
-    const maxDistance = Math.max(...distances);
-    const distanceRange = maxDistance - minDistance;
-
-    if (distanceRange === 0) {
-      return [
-        {
-          points: frame,
-          scale: { x: pointSize, y: pointSize, z: pointSize },
-          color: { r: 0, g: 1, b: 0, a: 1 },
-          pose: {
-            position: { x: 0, y: 0, z: 0 },
-            orientation: { x: 0, y: 0, z: 0, w: 1 },
-          },
-        },
-      ];
-    }
-
-    // Group points into bins
-    const bins = Array.from({ length: numBins }, () => []);
-
-    frame.forEach((point, index) => {
-      const distance = distances[index];
-      let normalizedDistance = (distance - minDistance) / distanceRange;
-      // Start the green->red transition earlier by compressing the range
-      normalizedDistance = Math.min(normalizedDistance * 2, 1.0);
-      const binIndex = Math.min(
-        Math.floor(normalizedDistance * numBins),
-        numBins - 1
-      );
-      bins[binIndex].push(point);
-    });
-
-    // Create stable marker objects
-    const result = [];
-    bins.forEach((points, binIndex) => {
-      if (points.length > 0) {
-        const normalizedDistance = binIndex / (numBins - 1);
-        result.push({
-          points: points,
-          scale: { x: pointSize, y: pointSize, z: pointSize },
-          color: {
-            r: normalizedDistance,
-            g: 1 - normalizedDistance,
-            b: 0,
-            a: 1,
-          },
-          pose: {
-            position: { x: 0, y: 0, z: 0 },
-            orientation: { x: 0, y: 0, z: 0, w: 1 },
-          },
-        });
-      }
-    });
-
-    return result;
+    const pointGroups = groupPointsByDistance(frame);
+    return createDistanceColorMarkers(pointGroups, pointSize);
   }, [frame]);
 
   return (
