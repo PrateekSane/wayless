@@ -3,38 +3,59 @@ import React, { useEffect, useRef, useState } from "react";
 import { loadPointClouds } from "./bagLoader";
 
 export default function PointCloudViewer() {
-  const pointSize = 5;
-
-  const [frames, setFrames] = useState([]);
-
-  useEffect(() => {
-    const chunkSize = 4; // number of frames to combine per “sweep”
-
-    async function loadAndCombine() {
-      try {
-        const loaded = await loadPointClouds("/velo_21.bag");
-        if (loaded.length === 0) return;
-
-        // take the first `chunkSize` frames and flatten into one big array
-        const firstSweep = loaded.slice(0, chunkSize).flat(); // same as `.reduce((acc, f) => acc.concat(f), [])`
-
-        setFrames(firstSweep);
-      } catch (err) {
-        console.error("Failed to load point clouds:", err);
-      }
-    }
-
-    loadAndCombine();
-  }, []);
-
+  // camera methods
   const [cameraState, setCameraState] = useState({
     // 15 m back on Y, 5 m up on Z
     position: { x: 0, y: -15, z: 5 },
     lookAt: { x: 0, y: 0, z: 0 },
   });
 
+  const [allSweeps, setAllSweeps] = useState([]);
+  const [sweepIndex, setSweepIndex] = useState(0);
+  useEffect(() => {
+    async function loadAndChunk() {
+      const loaded = await loadPointClouds("/velo_21.bag");
+      setAllSweeps(loaded);
+    }
+    loadAndChunk();
+  }, []);
+
+  // Frame handling
+  const [frame, setFrame] = useState([]);
+  useEffect(() => {
+    async function combineFrames() {
+      // num frames to combine
+      const chunkSize = 4;
+      try {
+        // take the first `chunkSize` frames and flatten into one big array
+        const curFrame = allSweeps
+          .slice(sweepIndex * chunkSize, (sweepIndex + 1) * chunkSize)
+          .flat();
+
+        setFrame(curFrame);
+      } catch (err) {
+        console.error("Failed to load point clouds:", err);
+      }
+    }
+
+    combineFrames();
+  }, [allSweeps, sweepIndex]);
+
+  useEffect(() => {
+    function onKey(e) {
+      if (e.code === "Space" && allSweeps.length > 0) {
+        setSweepIndex((i) => (i + 1) % allSweeps.length);
+        console.log("sweepIndex", sweepIndex);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [frame, sweepIndex, allSweeps]);
+
+  // Points handling
+  const pointSize = 5;
   const marker = {
-    points: frames,
+    points: frame,
     scale: { x: pointSize, y: pointSize, z: pointSize },
     color: { r: 0, g: 1, b: 0, a: 1 }, // make them green
     pose: {
@@ -53,11 +74,7 @@ export default function PointCloudViewer() {
     >
       <Axes length={10} />
 
-      {/*firstFrame.length > 0 && (
-        <Points points={[marker]} />
-      )*/}
-
-      {frames.length > 0 && <Points>{[marker]}</Points>}
+      {frame.length > 0 && <Points>{[marker]}</Points>}
 
       <Cubes>
         {[
