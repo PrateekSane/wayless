@@ -1,5 +1,5 @@
 import Worldview, { Axes, Cubes, Points } from "@foxglove/regl-worldview";
-import React, { useEffect, useRef, useState } from "react";
+import React, { KeyboardEvent, useEffect, useRef, useState } from "react";
 import { loadPointClouds } from "./bagLoader";
 
 export default function PointCloudViewer() {
@@ -12,6 +12,8 @@ export default function PointCloudViewer() {
 
   const [allSweeps, setAllSweeps] = useState([]);
   const [sweepIndex, setSweepIndex] = useState(0);
+  const playRef = useRef(null);
+
   useEffect(() => {
     async function loadAndChunk() {
       const loaded = await loadPointClouds("/velo_21.bag");
@@ -42,15 +44,28 @@ export default function PointCloudViewer() {
   }, [allSweeps, sweepIndex]);
 
   useEffect(() => {
-    function onKey(e) {
-      if (e.code === "Space" && allSweeps.length > 0) {
-        setSweepIndex((i) => (i + 1) % allSweeps.length);
-        console.log("sweepIndex", sweepIndex);
+    function onKeyDown(e) {
+      if (e.code !== "Space" || allSweeps.length === 0) {
+        return;
+      }
+      if (playRef.current) {
+        // already playing → stop
+        clearInterval(playRef.current);
+        playRef.current = null;
+      } else {
+        // not playing → start auto‑advance
+        playRef.current = window.setInterval(() => {
+          setSweepIndex((i) => (i + 1) % allSweeps.length);
+        }, 200); // 5 Hz
       }
     }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [frame, sweepIndex, allSweeps]);
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      if (playRef.current) clearInterval(playRef.current);
+    };
+  }, [allSweeps.length]);
 
   // Points handling
   const pointSize = 5;
