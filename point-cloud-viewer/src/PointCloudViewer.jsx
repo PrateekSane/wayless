@@ -5,18 +5,26 @@ import { loadPointClouds } from "./bagLoader";
 export default function PointCloudViewer() {
   const pointSize = 5;
 
-  const [firstFrame, setFirstFrame] = useState([]);
+  const [frames, setFrames] = useState([]);
 
-  // load bag → scans
   useEffect(() => {
-    loadPointClouds("/velo_21.bag")
-      .then((loaded) => {
-        if (loaded.length > 0) {
-          setFirstFrame(loaded[0]);
-          console.log("APPLES BANANAS ", loaded[0]);
-        }
-      })
-      .catch(console.error);
+    const chunkSize = 4; // number of frames to combine per “sweep”
+
+    async function loadAndCombine() {
+      try {
+        const loaded = await loadPointClouds("/velo_21.bag");
+        if (loaded.length === 0) return;
+
+        // take the first `chunkSize` frames and flatten into one big array
+        const firstSweep = loaded.slice(0, chunkSize).flat(); // same as `.reduce((acc, f) => acc.concat(f), [])`
+
+        setFrames(firstSweep);
+      } catch (err) {
+        console.error("Failed to load point clouds:", err);
+      }
+    }
+
+    loadAndCombine();
   }, []);
 
   const [cameraState, setCameraState] = useState({
@@ -26,7 +34,7 @@ export default function PointCloudViewer() {
   });
 
   const marker = {
-    points: firstFrame,
+    points: frames,
     scale: { x: pointSize, y: pointSize, z: pointSize },
     color: { r: 0, g: 1, b: 0, a: 1 }, // make them green
     pose: {
@@ -49,7 +57,7 @@ export default function PointCloudViewer() {
         <Points points={[marker]} />
       )*/}
 
-      {firstFrame.length > 0 && <Points>{[marker]}</Points>}
+      {frames.length > 0 && <Points>{[marker]}</Points>}
 
       <Cubes>
         {[
