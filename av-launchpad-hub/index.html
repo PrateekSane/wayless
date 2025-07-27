@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rig - The Future of AV Data</title>
+    <meta
+      name="description"
+      content="Revolutionary data infrastructure for autonomous vehicle development. Built for engineers, by engineers."
+    />
+    <meta name="author" content="Rig" />
+
+    <meta property="og:title" content="Rig - The Future of AV Data" />
+    <meta
+      property="og:description"
+      content="Revolutionary data infrastructure for autonomous vehicle development. Built for engineers, by engineers."
+    />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:image"
+      content="https://lovable.dev/opengraph-image-p98pqg.png"
+    />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@lovable_dev" />
+    <meta
+      name="twitter:image"
+      content="https://lovable.dev/opengraph-image-p98pqg.png"
+    />
+    <script>
+      // setImmediate polyfill for browser environments
+      if (typeof globalThis.setImmediate === "undefined") {
+        let nextHandle = 1;
+        const tasksByHandle = {};
+        let currentlyRunningATask = false;
+
+        const setImmediatePolyfill = function (callback) {
+          if (typeof callback !== "function") {
+            throw new TypeError("Callback must be a function");
+          }
+
+          const args = Array.prototype.slice.call(arguments, 1);
+          const handle = nextHandle++;
+          tasksByHandle[handle] = { callback, args };
+
+          if (typeof MessageChannel !== "undefined") {
+            const channel = new MessageChannel();
+            channel.port2.onmessage = function () {
+              runIfPresent(handle);
+            };
+            channel.port1.postMessage(null);
+          } else {
+            setTimeout(function () {
+              runIfPresent(handle);
+            }, 0);
+          }
+
+          return handle;
+        };
+
+        const clearImmediatePolyfill = function (handle) {
+          delete tasksByHandle[handle];
+        };
+
+        function runIfPresent(handle) {
+          if (currentlyRunningATask) {
+            setTimeout(function () {
+              runIfPresent(handle);
+            }, 0);
+          } else {
+            const task = tasksByHandle[handle];
+            if (task) {
+              currentlyRunningATask = true;
+              try {
+                task.callback.apply(null, task.args);
+              } finally {
+                clearImmediatePolyfill(handle);
+                currentlyRunningATask = false;
+              }
+            }
+          }
+        }
+
+        globalThis.setImmediate = setImmediatePolyfill;
+        globalThis.clearImmediate = clearImmediatePolyfill;
+      }
+    </script>
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
