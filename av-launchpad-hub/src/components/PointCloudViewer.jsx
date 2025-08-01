@@ -18,6 +18,9 @@ export default function PointCloudViewer() {
 
   const [allSweeps, setAllSweeps] = useState([]);
   const [sweepIndex, setSweepIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadProgress, setLoadProgress] = useState(0);
   const playRef = useRef(null);
 
   useEffect(() => {
@@ -25,9 +28,11 @@ export default function PointCloudViewer() {
     async function loadSequentialBags() {
       const urls = Object.values(bagFiles).sort();
       console.log("Bags to load:", urls);
+      const totalFiles = urls.length;
 
-      for (const url of urls) {
+      for (let i = 0; i < urls.length; i++) {
         if (cancelled) break;
+        const url = urls[i];
         console.log("⏳ loading", url);
         try {
           // load the entire bag at once
@@ -35,10 +40,15 @@ export default function PointCloudViewer() {
           console.log(`✅ loaded ${scans.length} scans from`, url);
           // append all scans from this bag
           setAllSweeps((prev) => [...prev, ...scans]);
+          // update progress
+          setLoadProgress(((i + 1) / totalFiles) * 100);
         } catch (err) {
           console.error("❌ failed to load", url, err);
         }
       }
+      
+      // loading complete
+      setIsLoading(false);
     }
 
     loadSequentialBags();
@@ -68,22 +78,41 @@ export default function PointCloudViewer() {
     combineFrames();
   }, [allSweeps, sweepIndex]);
 
+  const togglePlayPause = () => {
+    if (allSweeps.length === 0) return;
+    
+    if (playRef.current) {
+      // already playing → stop
+      clearInterval(playRef.current);
+      playRef.current = null;
+      setIsPlaying(false);
+    } else {
+      // not playing → start auto‑advance
+      const interval = 100;
+      playRef.current = window.setInterval(() => {
+        setSweepIndex((i) => {
+          const nextIndex = i + 1;
+          const maxFrames = Math.floor(allSweeps.length / 4);
+          if (nextIndex >= maxFrames) {
+            clearInterval(playRef.current);
+            playRef.current = null;
+            setIsPlaying(false);
+            return 0; // Reset to first frame
+          }
+          return nextIndex;
+        });
+      }, interval);
+      setIsPlaying(true);
+    }
+  };
+
   useEffect(() => {
-    const interval = 100;
     function onKeyDown(e) {
-      if (e.code !== "Space" || allSweeps.length === 0) {
+      if (e.code !== "Space") {
         return;
       }
-      if (playRef.current) {
-        // already playing → stop
-        clearInterval(playRef.current);
-        playRef.current = null;
-      } else {
-        // not playing → start auto‑advance
-        playRef.current = window.setInterval(() => {
-          setSweepIndex((i) => (i + 1) % allSweeps.length);
-        }, interval);
-      }
+      e.preventDefault();
+      togglePlayPause();
     }
 
     window.addEventListener("keydown", onKeyDown);
@@ -108,11 +137,9 @@ export default function PointCloudViewer() {
       Math.sqrt(point.x * point.x + point.y * point.y + point.z * point.z)
     );
 
-    const minDistance = Math.min(...distances);
-    const maxDistance = Math.max(...distances);
-    const distanceRange = maxDistance - minDistance;
+    const thresholds = [4, 8, 12, 16, 20, Infinity];
 
-    if (distanceRange === 0) {
+    if (distances.length === 0) {
       return [
         {
           points: frame,
@@ -127,17 +154,17 @@ export default function PointCloudViewer() {
     }
 
     // Group points into bins
-    const bins = Array.from({ length: numBins }, () => []);
+    const bins = Array.from({ length: thresholds.length }, () => []);
 
     frame.forEach((point, index) => {
       const distance = distances[index];
-      let normalizedDistance = (distance - minDistance) / distanceRange;
-      // Start the green->red transition earlier by compressing the range
-      normalizedDistance = Math.min(normalizedDistance * 2, 1.0);
-      const binIndex = Math.min(
-        Math.floor(normalizedDistance * numBins),
-        numBins - 1
-      );
+      let binIndex = 0;
+      for (let i = 0; i < thresholds.length; i++) {
+        if (distance <= thresholds[i]) {
+          binIndex = i;
+          break;
+        }
+      }
       bins[binIndex].push(point);
     });
 
@@ -145,7 +172,7 @@ export default function PointCloudViewer() {
     const result = [];
     bins.forEach((points, binIndex) => {
       if (points.length > 0) {
-        const normalizedDistance = binIndex / (numBins - 1);
+        const normalizedDistance = binIndex / (thresholds.length - 1);
         result.push({
           points: points,
           scale: { x: pointSize, y: pointSize, z: pointSize },
@@ -167,27 +194,95 @@ export default function PointCloudViewer() {
   }, [frame]);
 
   return (
-    <Worldview
-      style={{ width: "80vw", height: "80vh" }}
-      // switch to a controlled camera
-      cameraState={cameraState}
-      // allow the user to orbit by right‑drag, WASD, etc.
-      onCameraStateChange={setCameraState}
-    >
-      {markers.length > 0 && <Points>{markers}</Points>}
+    <div className="relative w-full h-full flex flex-col">
+      <div className="flex-1 relative">
+        <Worldview
+          style={{ width: "80vw", height: "80vh" }}
+          // switch to a controlled camera
+          cameraState={cameraState}
+          // allow the user to orbit by right‑drag, WASD, etc.
+          onCameraStateChange={setCameraState}
+        >
+          {!isLoading && markers.length > 0 && <Points>{markers}</Points>}
 
-      <Cubes>
-        {[
-          {
-            pose: {
-              position: { x: 0, y: 0, z: 0 },
-              orientation: { x: 0, y: 0, z: 0, w: 1 },
-            },
-            scale: { x: 3, y: 2, z: 2 },
-            color: { r: 0, g: 0, b: 1, a: 1 },
-          },
-        ]}
-      </Cubes>
-    </Worldview>
+          <Cubes>
+            {[
+              {
+                pose: {
+                  position: { x: 0, y: 0, z: 0 },
+                  orientation: { x: 0, y: 0, z: 0, w: 1 },
+                },
+                scale: { x: 3, y: 2, z: 2 },
+                color: { r: 0, g: 0, b: 1, a: 1 },
+              },
+            ]}
+          </Cubes>
+        </Worldview>
+      
+        {/* Loading overlay */}
+        {isLoading && (
+          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+            <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Loading Point Cloud Data</h3>
+              <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
+                <div 
+                  className="bg-blue-600 h-4 rounded-full transition-all duration-300 ease-out"
+                  style={{ width: `${loadProgress}%` }}
+                ></div>
+              </div>
+              <div className="text-sm text-gray-600 text-center">
+                {Math.round(loadProgress)}% complete
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Status box */}
+        <div className="absolute top-4 left-4 bg-black bg-opacity-75 text-white p-3 rounded-lg">
+          <div className="text-sm space-y-1">
+            <div>Points: {frame.length.toLocaleString()}</div>
+            {allSweeps.length > 0 && (
+              <div>{isPlaying ? "▶️ Playing" : "⏸️ Paused"}</div>
+            )}
+            <div className="text-xs text-gray-300 mt-2 space-y-1">
+              <div>Press SPACE to play/pause</div>
+              <div>Click and drag to move around</div>
+              <div>Double-click to change angle</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Video-style Controls */}
+      {!isLoading && allSweeps.length > 0 && (
+        <div className="bg-gray-900 text-white p-4 flex flex-col space-y-3" style={{ width: "80vw" }}>
+          {/* Progress Bar */}
+          <div className="w-full bg-gray-600 rounded-full h-2 cursor-pointer">
+            <div 
+              className="bg-red-500 h-2 rounded-full transition-all duration-100"
+              style={{ 
+                width: `${((sweepIndex + 1) / Math.floor(allSweeps.length / 4)) * 100}%` 
+              }}
+            ></div>
+          </div>
+          
+          {/* Controls Row */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={togglePlayPause}
+                className="bg-transparent hover:bg-gray-700 text-white p-2 rounded-full transition-colors"
+                disabled={allSweeps.length === 0}
+              >
+                {isPlaying ? "⏸️" : "▶️"}
+              </button>
+              <span className="text-sm">
+                {sweepIndex + 1} / {Math.floor(allSweeps.length / 4)}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
