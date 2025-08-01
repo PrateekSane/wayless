@@ -2,6 +2,12 @@ import { loadPointClouds } from "@/lib/bagLoader";
 import Worldview, { Cubes, Points } from "@foxglove/regl-worldview";
 import React, { useEffect, useRef, useState } from "react";
 
+const bagFiles = import.meta.glob("../assets/*.bag", {
+  query: "?url",
+  import: "default",
+  eager: true,
+});
+
 export default function PointCloudViewer() {
   // camera methods
   const [cameraState, setCameraState] = useState({
@@ -15,11 +21,30 @@ export default function PointCloudViewer() {
   const playRef = useRef(null);
 
   useEffect(() => {
-    async function loadAndChunk() {
-      const loaded = await loadPointClouds("/velo_21.bag");
-      setAllSweeps(loaded);
+    let cancelled = false;
+    async function loadSequentialBags() {
+      const urls = Object.values(bagFiles).sort();
+      console.log("Bags to load:", urls);
+
+      for (const url of urls) {
+        if (cancelled) break;
+        console.log("⏳ loading", url);
+        try {
+          // load the entire bag at once
+          const scans = await loadPointClouds(url);
+          console.log(`✅ loaded ${scans.length} scans from`, url);
+          // append all scans from this bag
+          setAllSweeps((prev) => [...prev, ...scans]);
+        } catch (err) {
+          console.error("❌ failed to load", url, err);
+        }
+      }
     }
-    loadAndChunk();
+
+    loadSequentialBags();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Frame handling
@@ -143,7 +168,7 @@ export default function PointCloudViewer() {
 
   return (
     <Worldview
-      style={{ width: "100vw", height: "100vh" }}
+      style={{ width: "80vw", height: "80vh" }}
       // switch to a controlled camera
       cameraState={cameraState}
       // allow the user to orbit by right‑drag, WASD, etc.
