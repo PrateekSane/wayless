@@ -6,7 +6,7 @@ import {
   createVehicleCube,
 } from "@/lib/pointCloudUtils";
 import Worldview, { Cubes, Points } from "@foxglove/regl-worldview";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { LoadingOverlay } from "./LoadingOverlay";
 import { StatusBox } from "./StatusBox";
 import { VideoControls } from "./VideoControls";
@@ -16,6 +16,8 @@ export default function PointCloudViewer() {
     position: { x: 0, y: -15, z: 5 },
     lookAt: { x: 0, y: 0, z: 0 },
   });
+  const [wasLoading, setWasLoading] = useState(false);
+  const containerRef = useRef(null);
 
   const { allSweeps, isLoading, loadProgress } = useBagLoader();
   const { sweepIndex, isPlaying, togglePlayPause } =
@@ -25,8 +27,22 @@ export default function PointCloudViewer() {
   const markers = React.useMemo(() => createPointCloudMarkers(frame), [frame]);
   const vehicleCube = React.useMemo(() => createVehicleCube(), []);
 
+  // Handle smooth scroll when loading completes
+  useEffect(() => {
+    if (wasLoading && !isLoading) {
+      // Wait 1 second for content to render before scrolling
+      setTimeout(() => {
+        window.scrollTo({
+          top: document.body.scrollHeight,
+          behavior: "smooth",
+        });
+      }, 1000);
+    }
+    setWasLoading(isLoading);
+  }, [isLoading, wasLoading]);
+
   return (
-    <div className="relative w-full h-full flex flex-col">
+    <div ref={containerRef} className="relative w-full h-full flex flex-col">
       <div className="flex-1 relative">
         {isLoading ? (
           <LoadingOverlay loadProgress={loadProgress} />
