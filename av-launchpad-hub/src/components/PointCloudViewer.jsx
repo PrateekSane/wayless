@@ -36,7 +36,7 @@ export default function PointCloudViewer() {
           top: document.body.scrollHeight,
           behavior: "smooth",
         });
-      }, 1000);
+      }, 300);
     }
     setWasLoading(isLoading);
   }, [isLoading, wasLoading]);
