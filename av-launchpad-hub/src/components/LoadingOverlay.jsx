@@ -7,7 +7,7 @@ export function LoadingOverlay({ loadProgress }) {
         <ProgressBar
           progress={loadProgress}
           title="Loading Point Cloud Data"
-          description="Please wait while we process your data..."
+          description="Please wait while we process the data..."
           showPercentage={true}
           className="w-full"
         />

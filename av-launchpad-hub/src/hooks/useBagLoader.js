@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
 import { open } from "rosbag";
+import bagsManifest from "../bags.json";
+
+const base = import.meta.env.VITE_BLOB_BASE_URL;
+const manifestPath = import.meta.env.VITE_BAG_MANIFEST_PATH;
 
 const bagFiles = import.meta.glob("../assets/*.bag", {
   query: "?url",
@@ -14,10 +18,30 @@ export function useBagLoader() {
 
   useEffect(() => {
     let cancelled = false;
+    let urls;
+
+    const mode = import.meta.env.MODE;
+    if (mode === "development") {
+      // local files in dev
+      urls = Object.values(
+        import.meta.glob("../assets/*.bag", {
+          query: "?url",
+          import: "default",
+          eager: true,
+        })
+      );
+    } else if (mode === "production") {
+      // blobs in prod
+      const base = import.meta.env.VITE_BLOB_BASE_URL;
+      urls = bagsManifest.map((name) => `${base}/${name}`);
+    } else {
+      throw new Error(`Unsupported MODE: ${mode}`);
+    }
+
+    urls.sort();
+    console.log("Bags to load:", urls);
 
     async function loadSequentialBags() {
-      const urls = Object.values(bagFiles).sort();
-      console.log("Bags to load:", urls);
       const totalFiles = urls.length;
 
       for (let i = 0; i < urls.length; i++) {
