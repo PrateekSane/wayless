@@ -27,17 +27,8 @@ export default function PointCloudViewer() {
   const markers = React.useMemo(() => createPointCloudMarkers(frame), [frame]);
   const vehicleCube = React.useMemo(() => createVehicleCube(), []);
 
-  // Handle smooth scroll when loading completes
+  // Track loading state without auto-scrolling
   useEffect(() => {
-    if (wasLoading && !isLoading) {
-      // Wait 1 second for content to render before scrolling
-      setTimeout(() => {
-        const titleElement = containerRef.current?.querySelector('h1');
-        if (titleElement) {
-          titleElement.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
-      }, 300);
-    }
     setWasLoading(isLoading);
   }, [isLoading, wasLoading]);
 
@@ -53,20 +44,22 @@ export default function PointCloudViewer() {
                 Lombard Street, San Francisco
               </h1>
             </div>
-            <div className="relative">
-              <Worldview
-                style={{ width: "80vw", height: "80vh" }}
-                cameraState={cameraState}
-                onCameraStateChange={setCameraState}
-              >
-                {markers.length > 0 && <Points>{markers}</Points>}
-                <Cubes>{vehicleCube}</Cubes>
-              </Worldview>
-              <StatusBox
-                allSweeps={allSweeps}
-                isPlaying={isPlaying}
-                frame={frame}
-              />
+            <div className="relative flex justify-center">
+              <div className="relative" style={{ width: "80vw", maxWidth: "100%", height: "80vh" }}>
+                <Worldview
+                  style={{ width: "100%", height: "100%" }}
+                  cameraState={cameraState}
+                  onCameraStateChange={setCameraState}
+                >
+                  {markers.length > 0 && <Points>{markers}</Points>}
+                  <Cubes>{vehicleCube}</Cubes>
+                </Worldview>
+                <StatusBox
+                  allSweeps={allSweeps}
+                  isPlaying={isPlaying}
+                  frame={frame}
+                />
+              </div>
             </div>
           </>
         )}

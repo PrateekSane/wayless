@@ -2,6 +2,20 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Zap } from "lucide-react";
 
 const HeroSection = () => {
+  const scrollToContext = () => {
+    const contextSection = document.querySelector('[data-section="context"]');
+    if (contextSection) {
+      contextSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  const scrollToBottom = () => {
+    const scrollHeight = document.body.scrollHeight;
+    const windowHeight = window.innerHeight;
+    const targetPosition = scrollHeight - windowHeight - 100; // Stop 100px above the actual bottom
+    window.scrollTo({ top: targetPosition, behavior: "smooth" });
+  };
+
   return (
     <section className="min-h-screen flex items-center justify-center relative overflow-hidden">
       {/* Background effects */}
@@ -33,23 +47,24 @@ const HeroSection = () => {
 
         <h1 className="text-6xl md:text-8xl font-bold mb-6 leading-tight">
           <span className="bg-gradient-primary bg-clip-text text-transparent">
-            the future of
+            The future of
           </span>
           <br />
           <span className="text-foreground">AV data is here</span>
         </h1>
 
         <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed">
-          Revolutionary data infrastructure platform for long-tail autonomous
-          vehicle development.
+          Revolutionary data infrastructure for long-tail autonomous vehicle
+          development.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button
             size="lg"
             className="bg-gradient-primary hover:shadow-glow transition-all duration-300 group"
+            onClick={scrollToContext}
           >
-            Explore a Rig
+            See a Rig
             <ArrowRight
               size={16}
               className="ml-2 group-hover:translate-x-1 transition-transform"
@@ -59,8 +74,9 @@ const HeroSection = () => {
             size="lg"
             variant="outline"
             className="border-border/50 bg-card/20 backdrop-blur-sm hover:bg-card/40 hover:border-primary/50 transition-all duration-300"
+            onClick={scrollToBottom}
           >
-            See Point Cloud
+            Explore a Point Cloud
           </Button>
         </div>
       </div>

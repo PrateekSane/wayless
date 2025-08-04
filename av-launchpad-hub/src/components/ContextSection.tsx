@@ -12,7 +12,7 @@ const ContextSection: React.FC<ContextSectionProps> = ({
   description = "Our platform revolutionizes how autonomous vehicle teams collect, process, and analyze sensor data. With advanced point cloud visualization and real-time processing capabilities, we're enabling the next generation of self-driving technology through comprehensive data infrastructure solutions."
 }) => {
   return (
-    <section className="relative py-20 bg-card/20 backdrop-blur-sm">
+    <section data-section="context" className="relative py-20 bg-card/20 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Left side - YouTube video */}
