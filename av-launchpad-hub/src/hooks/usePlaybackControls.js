@@ -7,7 +7,7 @@ export function usePlaybackControls(allSweeps) {
 
   const togglePlayPause = () => {
     if (allSweeps.length === 0) return;
-    
+
     if (playRef.current) {
       clearInterval(playRef.current);
       playRef.current = null;
@@ -30,6 +30,13 @@ export function usePlaybackControls(allSweeps) {
       setIsPlaying(true);
     }
   };
+
+  // Auto-start playback when data loads
+  useEffect(() => {
+    if (allSweeps.length > 0 && !isPlaying && !playRef.current) {
+      togglePlayPause();
+    }
+  }, [allSweeps.length]);
 
   useEffect(() => {
     function onKeyDown(e) {
