@@ -50,8 +50,8 @@ export default defineConfig(({ mode }) => ({
       { find: /^fs$/, replacement: path.resolve(__dirname, "src/empty.js") },
       // Node core module fallbacks
       { find: /^path$/, replacement: "path-browserify" },
-      { find: /^process$/, replacement: "process/browser.js" },
       // Add setImmediate polyfill
+      { find: /^process$/, replacement: "process/browser.js" },
       {
         find: /^setImmediate$/,
         replacement: path.resolve(__dirname, "src/setImmediate-polyfill.js"),
@@ -60,6 +60,7 @@ export default defineConfig(({ mode }) => ({
   },
   define: {
     "process.env": {},
+    "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV),
     global: "globalThis",
   },
   optimizeDeps: {
