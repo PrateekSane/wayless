@@ -31,13 +31,6 @@ export function usePlaybackControls(allSweeps) {
     }
   };
 
-  // Auto-start playback when data loads
-  useEffect(() => {
-    if (allSweeps.length > 0 && !isPlaying && !playRef.current) {
-      togglePlayPause();
-    }
-  }, [allSweeps.length]);
-
   useEffect(() => {
     function onKeyDown(e) {
       if (e.code !== "Space") {

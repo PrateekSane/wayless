@@ -1,6 +1,7 @@
 import heroBg from "@/assets/hero-bg.jpg";
 import HeroSection from "@/components/HeroSection";
 import Navigation from "@/components/Navigation";
+import ContextSection from "@/components/ContextSection";
 import PointCloudViewer from "@/components/PointCloudViewer";
 
 const Index = () => {
@@ -19,6 +20,7 @@ const Index = () => {
 
       <Navigation />
       <HeroSection />
+      <ContextSection />
 
       {/* Placeholder for your React component */}
       <section className="relative z-10 py-20">
