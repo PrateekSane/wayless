@@ -32,10 +32,10 @@ export default function PointCloudViewer() {
     if (wasLoading && !isLoading) {
       // Wait 1 second for content to render before scrolling
       setTimeout(() => {
-        window.scrollTo({
-          top: document.body.scrollHeight,
-          behavior: "smooth",
-        });
+        const titleElement = containerRef.current?.querySelector('h1');
+        if (titleElement) {
+          titleElement.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
       }, 300);
     }
     setWasLoading(isLoading);
@@ -47,21 +47,28 @@ export default function PointCloudViewer() {
         {isLoading ? (
           <LoadingOverlay loadProgress={loadProgress} />
         ) : (
-          <div>
-            <Worldview
-              style={{ width: "80vw", height: "80vh" }}
-              cameraState={cameraState}
-              onCameraStateChange={setCameraState}
-            >
-              {markers.length > 0 && <Points>{markers}</Points>}
-              <Cubes>{vehicleCube}</Cubes>
-            </Worldview>
-            <StatusBox
-              allSweeps={allSweeps}
-              isPlaying={isPlaying}
-              frame={frame}
-            />
-          </div>
+          <>
+            <div className="text-center py-4">
+              <h1 className="text-2xl font-bold text-gray-800">
+                Lombard Street, San Francisco
+              </h1>
+            </div>
+            <div className="relative">
+              <Worldview
+                style={{ width: "80vw", height: "80vh" }}
+                cameraState={cameraState}
+                onCameraStateChange={setCameraState}
+              >
+                {markers.length > 0 && <Points>{markers}</Points>}
+                <Cubes>{vehicleCube}</Cubes>
+              </Worldview>
+              <StatusBox
+                allSweeps={allSweeps}
+                isPlaying={isPlaying}
+                frame={frame}
+              />
+            </div>
+          </>
         )}
       </div>
 

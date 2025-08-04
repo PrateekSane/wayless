@@ -1,5 +1,4 @@
 import react from "@vitejs/plugin-react-swc";
-import { componentTagger } from "lovable-tagger";
 import path from "path";
 // Remove the problematic rollup-plugin-node-polyfills
 // import nodePolyfills from "rollup-plugin-node-polyfills";
@@ -18,8 +17,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(), // React w/ SWC
     // Use Vite's built-in polyfill handling instead
-    mode === "development" && componentTagger(),
-  ].filter(Boolean),
+  ],
   resolve: {
     alias: [
       // Root alias
