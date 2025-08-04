@@ -7,12 +7,15 @@ interface ContextSectionProps {
 }
 
 const ContextSection: React.FC<ContextSectionProps> = ({
-  youtubeUrl = "https://www.youtube.com/embed/dQw4w9WgXcQ",
+  youtubeUrl = "https://www.youtube.com/embed/H7yCXRUB-rc",
   title = "Building the Future of AV Data",
-  description = "Our platform revolutionizes how autonomous vehicle teams collect, process, and analyze sensor data. With advanced point cloud visualization and real-time processing capabilities, we're enabling the next generation of self-driving technology through comprehensive data infrastructure solutions."
+  description = "Creating a sensor mount, called a Rig, and deploying them on rideshare vehicles across the country to collect long tail AV data. It's of utmost importance to make sure AVs are safe. Achieving this requires having the data to understand the behavior of AVs in various situations.",
 }) => {
   return (
-    <section data-section="context" className="relative py-20 bg-card/20 backdrop-blur-sm">
+    <section
+      data-section="context"
+      className="relative py-20 bg-card/20 backdrop-blur-sm"
+    >
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Left side - YouTube video */}
@@ -39,14 +42,6 @@ const ContextSection: React.FC<ContextSectionProps> = ({
             <p className="text-lg text-muted-foreground leading-relaxed">
               {description}
             </p>
-            <div className="pt-4">
-              <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-2">
-                <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-                <span className="text-sm text-primary font-medium">
-                  Live Data Processing
-                </span>
-              </div>
-            </div>
           </div>
         </div>
       </div>
