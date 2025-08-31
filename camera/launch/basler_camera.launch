@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- Camera node using Aravis -->
+    <node name="aravis_camera_node" pkg="camera_aravis" type="camnode" output="screen">
+        <!-- Camera parameters -->
+        <param name="frame_id" value="camera_optical_frame"/>
+        <param name="guid" value=""/>  <!-- Leave empty to use first available camera -->
+        <param name="camera_info_url" value=""/>
+        
+        <!-- Image settings -->
+        <param name="pixel_format" value="Mono8"/>  <!-- or RGB8 for color -->
+        <param name="binning_x" value="1"/>
+        <param name="binning_y" value="1"/>
+        
+        <!-- GigE specific settings -->
+        <param name="mtu" value="3000"/>  <!-- Adjust based on your network -->
+        <param name="inter_packet_delay" value="1000"/>
+        
+        <!-- Frame rate and exposure -->
+        <param name="frame_rate" value="30.0"/>
+        <param name="exposure_time" value="10000"/>  <!-- microseconds -->
+        <param name="gain" value="0"/>
+        
+        <!-- Auto functions -->
+        <param name="exposure_auto" value="Off"/>
+        <param name="gain_auto" value="Off"/>
+        
+        <!-- ROI settings -->
+        <param name="width" value="640"/>
+        <param name="height" value="480"/>
+        <param name="offset_x" value="0"/>
+        <param name="offset_y" value="0"/>
+        
+        <!-- Publishing settings -->
+        <param name="use_ros_time" value="true"/>
+    </node>
+
+    <!-- Static transform publisher for camera frame -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="camera_base_link"
+          args="0 0 0 0 0 0 1 base_link camera_link" />
+    
+    <node pkg="tf2_ros" type="static_transform_publisher" name="camera_optical_frame"
+          args="0 0 0 -0.5 0.5 -0.5 0.5 camera_link camera_optical_frame" />
+</launch>

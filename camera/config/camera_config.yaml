@@ -1,0 +1,38 @@
+# Basler acA640-120gm Camera Configuration
+
+# Network Configuration
+network:
+  mtu_size: 3000  # Increase for better performance, max depends on your network
+  inter_pkg_delay: 1000  # microseconds between packets
+  
+# Image Settings
+image:
+  width: 640
+  height: 480
+  pixel_format: "Mono8"  # or "RGB8" for color
+  binning_x: 1
+  binning_y: 1
+  
+# Acquisition Settings  
+acquisition:
+  frame_rate: 30.0  # Hz
+  exposure_time: 10000  # microseconds (10ms)
+  gain: 0  # dB
+  
+# Auto Functions
+auto_functions:
+  exposure_auto: false
+  gain_auto: false
+  white_balance_auto: false
+  
+# Trigger Settings
+trigger:
+  trigger_mode: "Off"  # "Off", "On"
+  trigger_source: "Software"  # "Software", "Line1", etc.
+  
+# ROI (Region of Interest)
+roi:
+  offset_x: 0
+  offset_y: 0
+  width: 640
+  height: 480
