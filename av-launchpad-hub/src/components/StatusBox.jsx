@@ -9,7 +9,7 @@ export function StatusBox({ allSweeps, isPlaying, frame }) {
         <div className="text-xs text-gray-300 mt-2 space-y-1">
           <div>Press SPACE to play/pause</div>
           <div>Click and drag to move around</div>
-          <div>Use two fingers/double-click to change angle</div>
+          <div>Use two fingers to change angle</div>
         </div>
       </div>
     </div>

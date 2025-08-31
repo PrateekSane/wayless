@@ -47,6 +47,12 @@ export function usePlaybackControls(allSweeps) {
     };
   }, [allSweeps.length]);
 
+  useEffect(() => {
+    if (allSweeps.length > 0 && !isPlaying && !playRef.current) {
+      togglePlayPause();
+    }
+  }, [allSweeps.length]);
+
   return {
     sweepIndex,
     setSweepIndex,

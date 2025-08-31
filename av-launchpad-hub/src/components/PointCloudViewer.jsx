@@ -41,11 +41,17 @@ export default function PointCloudViewer() {
           <>
             <div className="text-center py-4">
               <h1 className="text-2xl font-bold text-gray-800">
-                Lombard Street, San Francisco
+                Explore a Point Cloud
               </h1>
+              <h2 className="text-xl text-gray-800">
+                Lombard Street, San Francisco
+              </h2>
             </div>
             <div className="relative flex justify-center">
-              <div className="relative" style={{ width: "80vw", maxWidth: "100%", height: "80vh" }}>
+              <div
+                className="relative"
+                style={{ width: "80vw", maxWidth: "100%", height: "80vh" }}
+              >
                 <Worldview
                   style={{ width: "100%", height: "100%" }}
                   cameraState={cameraState}
