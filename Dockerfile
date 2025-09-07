@@ -1,47 +1,114 @@
-# 0) Base: ROS2 Rolling on Ubuntu/arm64 or x86_64
-FROM ros:rolling-ros-base
+FROM ros:noetic-perception
 
-# 1) Install system tooling + ROS2 core packages
+# 1) Update package lists and install basic dependencies first
 RUN apt-get update && apt-get install -y \
-      wget git build-essential \
-      python3-colcon-common-extensions \
-      python3-rosdep \
-      ros-rolling-ros-bridge-server \
-      ros-rolling-image-transport \
-      ros-rolling-cv-bridge \
-      ros-rolling-rosbag2 \
-      ros-rolling-rosbag2-transport \
-    && rm -rf /var/lib/apt/lists/*
+    wget \
+    lsb-release \
+    gnupg2 \
+    git \
+    python3-rosdep \
+    python3-rosinstall \
+    python3-rosinstall-generator \
+    python3-wstool \
+    build-essential \
+  && rm -rf /var/lib/apt/lists/*
 
-# 2) Install Basler Pylon SDK (Linux .deb)
-#    👉 Grab the real .deb link from Basler’s site under “Linux → Debian Installer”
-RUN wget https://www.baslerweb.com/en/downloads/software/3520605482/ \
-      -O /tmp/pylon.deb && \
-    dpkg -i /tmp/pylon.deb || true && \
-    apt-get update && apt-get install -y -f && \
-    rm /tmp/pylon.deb
-
-# 3) Initialize rosdep for source builds
+# 2) Initialize rosdep (this needs to happen early)
 RUN rosdep init || true && rosdep update
 
-# 4) Create a ROS2 workspace
-RUN mkdir -p /root/ros2_ws/src
+# 3) Install ROS packages and build dependencies
+RUN apt-get update && apt-get install -y \
+    ros-noetic-velodyne \
+    ros-noetic-velodyne-pointcloud \
+    ros-noetic-rosbag \
+    ros-noetic-rosbridge-server \
+    ros-noetic-pcl-ros \
+    ros-noetic-sensor-msgs \
+    ros-noetic-roslint \
+    ros-noetic-camera-info-manager \
+    ros-noetic-image-transport \
+    ros-noetic-cv-bridge \
+    ros-noetic-diagnostic-updater \
+    ros-noetic-actionlib \
+    libopencv-dev \
+    cmake \
+    pkg-config \
+  && rm -rf /var/lib/apt/lists/*
 
-# 5) Clone the ROS2 drivers
-RUN cd /root/ros2_ws/src && \
-    git clone https://github.com/basler/pylon-ros-camera.git && \    # Basler ROS2 driver :contentReference[oaicite:0]{index=0}
-    git clone https://github.com/ros-drivers/velodyne.git             # Velodyne ROS2 driver & pointcloud :contentReference[oaicite:1]{index=1}
+# 4) Install Basler pylon SDK from local tar file
+COPY pylon.tar.gz /tmp/
+RUN cd /tmp && \
+    tar -xzf pylon.tar.gz && \
+    cd pylon_*_linux_x86_64 && \
+    tar -C /opt -xzf pylonSDK*.tar.gz && \
+    rm -rf /tmp/pylon*
 
-# 6) Install source dependencies & build everything
-RUN /bin/bash -c "\
-    source /opt/ros/rolling/setup.bash && \
-    rosdep update && \
-    rosdep install --from-paths src --ignore-src --rosdistro rolling -y && \
-    colcon build --symlink-install \
-  "
+# 4a) Verify Pylon installation and set up proper paths
+RUN echo "=== Pylon Installation Check ===" && \
+    find /opt -name "*pylon*" -type d 2>/dev/null && \
+    find /opt -name "PylonIncludes.h" 2>/dev/null && \
+    ls -la /opt/ && \
+    # Create symlink to the actual pylon installation
+    PYLON_DIR=$(find /opt -name "*pylon*" -type d | head -1) && \
+    if [ -n "$PYLON_DIR" ]; then \
+        echo "Found Pylon at: $PYLON_DIR" && \
+        ln -sf "$PYLON_DIR" /opt/pylon && \
+        ls -la /opt/pylon/include/ || echo "No include directory found"; \
+    else \
+        echo "ERROR: Pylon installation not found!"; \
+        exit 1; \
+    fi
 
-# 7) Auto‑source on shell start
-RUN echo 'source /opt/ros/rolling/setup.bash' >> /root/.bashrc && \
-    echo 'source /root/ros2_ws/install/setup.bash' >> /root/.bashrc
+# 5) Create catkin workspace and clone repositories first
+RUN mkdir -p /root/catkin_ws/src && \
+    cd /root/catkin_ws/src && \
+    git clone https://github.com/magazino/pylon_camera.git && \
+    git clone https://github.com/magazino/camera_control_msgs.git
 
+# 6) Create custom rosdep rule for pylon
+RUN mkdir -p /etc/ros/rosdep/sources.list.d && \
+    echo "pylon:" > /etc/ros/rosdep/sources.list.d/50-pylon.yaml && \
+    echo "  ubuntu:" >> /etc/ros/rosdep/sources.list.d/50-pylon.yaml && \
+    echo "    focal: [pylon]" >> /etc/ros/rosdep/sources.list.d/50-pylon.yaml && \
+    echo "    bionic: [pylon]" >> /etc/ros/rosdep/sources.list.d/50-pylon.yaml && \
+    echo "    xenial: [pylon]" >> /etc/ros/rosdep/sources.list.d/50-pylon.yaml
+
+# 7) Add the magazino pylon_sdk rosdep rule as well
+RUN echo "yaml https://raw.githubusercontent.com/magazino/pylon_camera/indigo-devel/rosdep/pylon_sdk.yaml" \
+      > /etc/ros/rosdep/sources.list.d/15-pylon_sdk.yaml
+
+# 8) Update rosdep with new rules
+RUN rosdep update
+
+# 9) Install dependencies manually (skip problematic packages)
+RUN /bin/bash -c "cd /root/catkin_ws && \
+    source /opt/ros/noetic/setup.bash && \
+    rosdep install --from-paths src --ignore-src --rosdistro noetic -y --skip-keys='pylon pylon_sdk' || true"
+
+# 10) Build the workspace with dynamically found Pylon paths
+RUN /bin/bash -c "cd /root/catkin_ws && \
+    source /opt/ros/noetic/setup.bash && \
+    PYLON_DIR=\$(readlink -f /opt/pylon) && \
+    echo \"Using Pylon directory: \$PYLON_DIR\" && \
+    export PYLON_ROOT=\$PYLON_DIR && \
+    export CMAKE_PREFIX_PATH=\$PYLON_DIR:\$CMAKE_PREFIX_PATH && \
+    export CMAKE_INCLUDE_PATH=\$PYLON_DIR/include:\$CMAKE_INCLUDE_PATH && \
+    export CMAKE_LIBRARY_PATH=\$PYLON_DIR/lib64:\$PYLON_DIR/lib:\$CMAKE_LIBRARY_PATH && \
+    export LD_LIBRARY_PATH=\$PYLON_DIR/lib64:\$PYLON_DIR/lib:\$LD_LIBRARY_PATH && \
+    catkin_make -DCMAKE_BUILD_TYPE=Release -j2 \
+      -DCMAKE_CXX_FLAGS=\"-I\$PYLON_DIR/include\" \
+      -DCMAKE_EXE_LINKER_FLAGS=\"-L\$PYLON_DIR/lib64 -L\$PYLON_DIR/lib\""
+
+# 11) Set up environment
+RUN echo "source /opt/ros/noetic/setup.bash" >> /root/.bashrc && \
+    echo "source /root/catkin_ws/devel/setup.bash" >> /root/.bashrc
+
+# 12) Copy in your existing launch scripts
+COPY ros_launch /root/wayless/ros_launch
+RUN chmod +x /root/wayless/ros_launch/*.sh
+
+# 13) Set environment variables for pylon
+ENV PYLON_ROOT=/opt/pylon
+
+# 14) Default to bash
 CMD ["bash"]

@@ -1,21 +1,12 @@
-version: '3.8'
-
+version: "3.8"
 services:
   basler_camera:
     build: .
-    container_name: basler_camera_node
-    network_mode: host  # Required for GigE Vision camera discovery
-    privileged: true    # Required for camera access
-    environment:
-      - DISPLAY=${DISPLAY}
-      - GENICAM_ROOT_V3_1=/usr/local/lib/python3.8/dist-packages/pypylon
+    container_name: basler_camera
+    platform: linux/arm64 # Specify runtime platform
+    network_mode: host # required for GigE Vision discovery
+    privileged: true # raw device/network access
     volumes:
-      - /tmp/.X11-unix:/tmp/.X11-unix:rw  # For GUI applications
-      - ./launch:/catkin_ws/launch:rw      # Launch files
-      - ./config:/catkin_ws/config:rw      # Config files  
-      - ./bags:/catkin_ws/bags:rw          # ROS bag storage
-      - /dev:/dev:rw                       # Device access
-    working_dir: /catkin_ws
+      - ./bags:/catkin_ws/bags:rw # save rosbags locally
     stdin_open: true
     tty: true
-    command: /bin/bash -c "source /opt/ros/noetic/setup.bash && source /catkin_ws/devel/setup.bash && bash"
