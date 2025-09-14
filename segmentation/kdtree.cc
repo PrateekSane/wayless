@@ -1,4 +1,5 @@
 #include <iostream>
+#include <set>
 using namespace std;
 
 enum class Axis { x, y, z };
@@ -81,12 +82,48 @@ public:
         return cur_node;
     }
 
+    void findAndShowElements(Point search_point)
+    {
+        
+        searchElements(root, search_point, Axis::x, 2);
+    }
+
     /*
     Finds closest point to the one passed in 
     */
-    u_int search_elements(Point points) const
+    void searchElements(Node* root, Point search_point, Axis split, int threshold) const
     {
-        return 0;
+        if (!root)
+        {
+            return;
+        }
+
+        Point cur_point = root->point;
+        bool x_thresh = search_point.x + threshold > cur_point.x && search_point.x - threshold < cur_point.x;
+        bool y_thresh = search_point.y + threshold > cur_point.y && search_point.y - threshold < cur_point.y;
+        bool z_thresh = search_point.z + threshold > cur_point.z && search_point.z - threshold < cur_point.z;
+        if (x_thresh && y_thresh && z_thresh)
+        {
+            int dist = getDistance(cur_point, search_point);
+            if (dist < threshold)
+            {
+                cout << "x: " << cur_point.x << " y: " << cur_point.y << " z: " << cur_point.z << endl;
+            }
+        }
+
+        Axis next_split = nextDirection(split); 
+        int root_val = get(root->point, split);
+        int check_val = get(search_point, split);
+        if (check_val <= root_val)
+        {
+            return searchElements(root->left, search_point, next_split, threshold);
+        }
+        else
+        {
+
+            return searchElements(root->right, search_point, next_split, threshold);
+        }
+        return;
     }
 
     void display_tree(Node* root) const 
@@ -111,7 +148,7 @@ public:
 private:
     Node* root;   
 
-    Axis nextDirection(Axis dir)
+    Axis nextDirection(Axis dir) const
     {
         if (dir == Axis::x)
         {
@@ -123,6 +160,11 @@ private:
         }
         return Axis::z;
     }
+
+    int getDistance(Point a, Point b) const 
+    {
+        return pow(pow(a.x - b.x, 2) + pow(a.y - b.y, 2) + pow(a.z - b.z, 2), .5);
+    }
 };
 
 int main()
@@ -133,6 +175,8 @@ int main()
     Point point3(-1, 0, 1);
     Point point4(0, 2, -1);
 
-    kdTree.insertPoints({point1, point3, point4, point2}, true);
+    kdTree.insertPoints({point1, point3, point4, point2});
+    
+    kdTree.findAndShowElements(Point({0,0,0}));
     return 0;
 }
