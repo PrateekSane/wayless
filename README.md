@@ -1,4 +1,23 @@
-# Velodyne VLP-16 to Raspberry Pi Streaming Guide
+# Rig: AV Data Collection platform
+This repo contains my work when building this rig. It includes ROS scripts, data handling scripts, segmentation experimenting, labelling experimenting, and the src for a web page to play with a point cloud
+
+[Youtube video](https://www.youtube.com/watch?v=H7yCXRUB-rc)
+
+Play with a [Point Cloud Here](rig-dusky.vercel.app/)
+
+```
+av-launchpad-hub/: website to interact with PointClouds.
+
+camera/: docker container and scripts to handle Basler ACA camera.
+
+data_handling/: useful data scripts
+
+ros_launch/: ROS scripts to launch the VLP16 LiDAR
+
+segmentation/: learning classical segmentation techniques
+```
+
+## Velodyne VLP-16 to Raspberry Pi Streaming Guide
 
 This guide walks you through the complete steps to stream 3D pointclouds from a Velodyne VLP-16 LiDAR to a Raspberry Pi running **Ubuntu 20.04 LTS (Focal Fossa)** and **ROS Noetic**.
 
